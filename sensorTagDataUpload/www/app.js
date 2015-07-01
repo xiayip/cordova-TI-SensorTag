@@ -26,6 +26,13 @@ app.sensortag.MOVEMENT_DATA = 'f000aa81-0451-4000-b000-000000000000';
 app.sensortag.MOVEMENT_CONFIG = 'f000aa82-0451-4000-b000-000000000000';
 app.sensortag.MOVEMENT_PERIOD = 'f000aa83-0451-4000-b000-000000000000';
 app.sensortag.MOVEMENT_NOTIFICATION = '00002902-0000-1000-8000-00805f9b34fb';
+//UUIDs for barometer services and characteristics.
+app.sensortag.BAROMETER_SERVICE = 'f000aa40-0451-4000-b000-000000000000'
+app.sensortag.BAROMETER_DATA = 'f000aa41-0451-4000-b000-000000000000'
+app.sensortag.BAROMETER_CONFIG = 'f000aa42-0451-4000-b000-000000000000'
+app.sensortag.BAROMETER_CALIBRATION = 'f000aa43-0451-4000-b000-000000000000'
+app.sensortag.BAROMETER_PERIOD = 'f000aa44-0451-4000-b000-000000000000'
+app.sensortag.BAROMETER_NOTIFICATION = '00002902-0000-1000-8000-00805f9b34fb'
 
 /**
  * Initialise the application.
@@ -159,7 +166,7 @@ app.readServices = function(device)
 	device.readServices(
 		[
 		app.sensortag.MOVEMENT_SERVICE // Movement service UUID.
-		],
+        ],
 		// Function that monitors accelerometer data.
 		app.startAccelerometerNotification,
 		function(errorCode)
@@ -183,7 +190,7 @@ app.startAccelerometerNotification = function(device)
 	// 3-axis acc. + 3-axis gyro + magnetometer on: 127 (1111111)
 	device.writeCharacteristic(
 		app.sensortag.MOVEMENT_CONFIG,
-		new Uint8Array([56,0]),
+		new Uint8Array([127,0]),
 		function()
 		{
 			console.log('Status: writeCharacteristic ok.');
@@ -231,6 +238,8 @@ app.startAccelerometerNotification = function(device)
 		{
 			app.showInfo('Status: Data stream active - accelerometer');
 			var dataArray = new Uint8Array(data);
+            app.getGyroscopeValues(dataArray);
+            app.getMagnetometerValues(dataArray);
 			var values = app.getAccelerometerValues(dataArray);
 			app.drawDiagram(values);
 		},
@@ -238,7 +247,67 @@ app.startAccelerometerNotification = function(device)
 		{
 			console.log('Error: enableNotification: ' + errorCode + '.');
 		});
+    
 };
+
+/**
+ * Read barometer data.
+ */
+//app.startBarometerNotification = function(device)
+//{
+//    sensorOn(
+//              app.sensortag.BAROMETER_CONFIG,
+//              app.sensortag.barometerConfig,
+//              app.sensortag.BAROMETER_PERIOD,
+//              app.sensortag.barometerInterval,
+//              app.sensortag.BAROMETER_DATA,
+//              app.sensortag.BAROMETER_NOTIFICATION,
+//              app.sensortag.barometerFun
+//              )
+//};
+
+//sensorOn = function(
+//                    configUUID,
+//                    configValue,
+//                    periodUUID,
+//                    periodValue,
+//                    dataUUID,
+//                    notificationUUID,
+//                    notificationFunction)
+//{
+//    // Only start sensor if a notification function has been set.
+//    if (!notificationFunction) { return }
+//    
+//    // Set sensor configuration to ON.
+//    configUUID && instance.device.writeCharacteristic(
+//                                                      configUUID,
+//                                                      new Uint8Array(configValue),
+//                                                      function() {},
+//                                                      instance.errorFun)
+//    
+//    // Set sensor update period.
+//    periodUUID && periodValue && instance.device.writeCharacteristic(
+//                                                                     periodUUID,
+//                                                                     new Uint8Array([periodValue / 10]),
+//                                                                     function() {},
+//                                                                     instance.errorFun)
+//    
+//    // Set sensor notification to ON.
+//    dataUUID && notificationUUID && instance.device.writeDescriptor(
+//                                                                    dataUUID, // Characteristic for data
+//                                                                    notificationUUID, // Configuration descriptor
+//                                                                    new Uint8Array([1,0]),
+//                                                                    function() {},
+//                                                                    instance.errorFun)
+//    
+//    // Start sensor notification.
+//    dataUUID && instance.device.enableNotification(
+//                                                   dataUUID,
+//                                                   function(data) { notificationFunction(new Uint8Array(data)) },
+//                                                   instance.errorFun)
+//    
+//    return instance
+//}
 
 /**
  * Calculate accelerometer values from raw data for SensorTag 2.
@@ -259,6 +328,69 @@ app.getAccelerometerValues = function(data)
 	// Return result.
 	return { x: ax, y: ay, z: az };
 };
+
+/**
+ * Calculate Gyroscope values from raw data for SensorTag 2.
+ * @param data - an Uint8Array.
+ * @return Object with fields: x, y, z.
+ */
+app.getGyroscopeValues = function(data)
+{
+    // Calculate gyroscope values.
+    var gx = evothings.util.littleEndianToInt16(data, 0) * 255.0 / 32768.0
+    var gy = evothings.util.littleEndianToInt16(data, 2) * 255.0 / 32768.0
+    var gz =  evothings.util.littleEndianToInt16(data, 4) * 255.0 / 32768.0
+    window.gx = evothings.util.littleEndianToInt16(data, 0) * 255.0 / 32768.0
+    window.gy = evothings.util.littleEndianToInt16(data, 2) * 255.0 / 32768.0
+    window.gz =  evothings.util.littleEndianToInt16(data, 4) * 255.0 / 32768.0
+    // Return result.
+    return { x: gx, y: gy, z: gz }
+}
+
+/**
+ * Calculate magnetometer values from raw data for SensorTag 2.
+ * @param data - an Uint8Array.
+ * @return Object with fields: x, y, z.
+ */
+app.getMagnetometerValues = function(data)
+{
+    // Magnetometer values (Micro Tesla).
+    var mx = evothings.util.littleEndianToInt16(data, 12) * (4912.0 / 32768.0)
+    var my = evothings.util.littleEndianToInt16(data, 14) * (4912.0 / 32768.0)
+    var mz = evothings.util.littleEndianToInt16(data, 16) * (4912.0 / 32768.0)
+    window.mx = evothings.util.littleEndianToInt16(data, 12) * (4912.0 / 32768.0)
+    window.my = evothings.util.littleEndianToInt16(data, 14) * (4912.0 / 32768.0)
+    window.mz = evothings.util.littleEndianToInt16(data, 16) * (4912.0 / 32768.0)
+    // Return result.
+    return { x: mx, y: my, z: mz }
+}
+
+/**
+ * Calculate Barometer values from raw data.
+ * @param data - an Uint8Array.
+ * @return Object with fields: humidityTemperature, relativeHumidity.
+ * @instance
+ * @public
+ */
+app.getBarometerValues = function(data)
+{
+    var p = evothings.util.littleEndianToUint16(data, 2)
+    
+    // Extraction of pressure value, based on sfloatExp2ToDouble from
+    // BLEUtility.m in Texas Instruments TI BLE SensorTag iOS app
+    // source code.
+    // TODO: Move to util.js
+    var mantissa = p & 0x0FFF
+    var exponent = p >> 12
+    
+    magnitude = Math.pow(2, exponent)
+    output = (mantissa * magnitude)
+    
+    var pInterpreted = output / 10000.0
+    window.pI = output / 10000.0
+    return { pressure: pInterpreted }
+}
+
 
 /**
  * Plot diagram of sensor values.

@@ -17,7 +17,7 @@
 	<meta name="viewport" content="width=device-width, user-scalable=no
 		initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
 
-	<title>TI SensorTag CC2650 Demo</title>
+	<title>DeepCoach</br>Sensor Data Capture</title>
 
 	<style>
 		@import 'ui/css/evothings-app.css';
@@ -34,7 +34,8 @@
 	<script src="libs/evothings/evothings.js"></script>
 	<script src="libs/evothings/easyble/easyble.js"></script>
 	<script src="app.js"></script>
-    <script src="libs/evothings/tisensortag.js"></script>
+<!--    <script src="libs/evothings/tisensortag/tisensortag.js"></script>-->
+<!--    <script src="libs/evothings/tisensortag/tisensortag-ble.js"></script>-->
 
 </head>
 
@@ -45,7 +46,7 @@
 			<img src="ui/images/arrow-left.svg" />
 		</button>
 
-		<img class="logotype" src="ui/images/logo.svg" alt="Evothings" />
+		<img class="logotype" src="ui/images/logo.png" alt="Evothings" />
 
 		<button id="menu-button" tabindex="0" onclick="this.focus()">
 			<img src="ui/images/menu.svg" />
@@ -62,20 +63,17 @@
 		</menu>
 	</header>
 
-	<h1>TI SensorTag CC2650 Demo</h1>
+	<h1>DeepCoach</br>Sensor Data Capture</h1>
 
 	<p id="info">Not Connected</p>
 
-	<button onclick="app.onStartButton()" class="green">START</button>
+	<button id="start" onclick="app.onStartButton()" class="green">START</button>
 	<button id="stopinterval" onclick="app.onStopButton()" class="red">STOP</button>
 
 	<canvas id="canvas" width="300" height="150"></canvas>
     
-    <div data-role="content">
-            <a href="#" data-role="button" id="writeToFile">Upload</a><br>
-            <form id="form1" action="#">
-            </form>
-    </div>
+    <!--            <a href="#" data-role="button" id="UpLoad">Upload</a><br>-->
+	<button id="UpLoad" onclick="upDataInterval()">UPLOAD</button>
 
 	<section id='information'>
 
@@ -114,25 +112,37 @@
     document.addEventListener("deviceready", onDeviceReady, false);
     
     function onDeviceReady() {
-        $("#writeToFile").on("click", upDataInterval);
         $("#stopinterval").on("click", stopInterval);
+        $("#start").on("click", UpLoadButtonEnable);
+        
     }
     
     function upDataInterval(){
+        $.post("http://invenmotion.com/yundong/index.php", {content :  "new"});
+        UpLoadButtonLoading()
         window.interval=self.setInterval("UpLoad(),get_time()",20);
     }
     
     function UpLoad(){
         var TimeData = window.time;
-        var AccelerometerData =   window.ax.toFixed(5) + 'G '
-                                + window.ay.toFixed(5) + 'G '
-                                + window.az.toFixed(5) + 'G';
-        var upData = TimeData + " " + AccelerometerData;
+        var AccelerometerData =   window.ax.toFixed(5) + " "
+                                + window.ay.toFixed(5) + " "
+                                + window.az.toFixed(5) ;
+        var GyroscopeData = (window.gx >= 0 ? '+' : '') + window.gx.toFixed(5) + " "
+                            + (window.gy >= 0 ? '+' : '') + window.gy.toFixed(5) + " "
+                            + (window.gz >= 0 ? '+' : '') + window.gz.toFixed(5) ;
+        var MagnetometerData =   (window.mx >= 0 ? '+' : '') + window.mx.toFixed(5) + " "
+                               + (window.my >= 0 ? '+' : '') + window.my.toFixed(5) + " "
+                               + (window.mz >= 0 ? '+' : '') + window.mz.toFixed(5) ;
+        //var BarometerData = window.pI.toPrecision(5);
+        //var upData = TimeData + " " + AccelerometerData + " " + GyroscopeData + " " + MagnetometerData + " " + BarometerData;
+        var upData = TimeData + " " + AccelerometerData + " " + GyroscopeData + " " + MagnetometerData;
         $.post("http://invenmotion.com/yundong/index.php", {content :  upData});
     }
     
     function stopInterval(){
         window.clearInterval(window.interval);
+        UpLoadButtonInit();
     }
     
     function get_time()
@@ -153,6 +163,24 @@
         if(temp<10) return "0"+temp;
         else return temp;
     }
+    //button
+    function UpLoadButtonInit(){
+    document.getElementById("UpLoad").innerHTML = "upload";
+    document.getElementById("UpLoad").style.background = "#777777";
+    document.getElementById("UpLoad").disabled = true;
+    }
+    
+    function UpLoadButtonEnable(){
+        document.getElementById("UpLoad").innerHTML = "upload";
+        document.getElementById("UpLoad").style.background = "#54dfb3";
+        document.getElementById("UpLoad").disabled = false;
+    }
+    function UpLoadButtonLoading(){
+        document.getElementById("UpLoad").innerHTML = "upLoadingData...";
+        document.getElementById("UpLoad").style.background = "#e15a64";
+        document.getElementById("UpLoad").disabled = true;
+    }
+
     </script>
 
 </body>
